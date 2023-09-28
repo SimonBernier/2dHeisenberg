@@ -26,6 +26,10 @@
 *.a
 *.lib
 
+# Text and data files
+*.txt
+*.dat
+
 # Executables
 *.exe
 *.out

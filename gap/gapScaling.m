@@ -1,6 +1,6 @@
 clearvars
-Ly = 3; Lx = 4;%8*Ly;
-h = 0:0.1:6;
+Ly = 3; Lx = 8*Ly;
+h = 0:0.1:9;
 
 en0 = zeros(length(Ly),length(h)); var0 = en0; maxBondDim0 = en0;
 gap = en0; var1 = en0; maxBondDim1 = en0;
@@ -49,7 +49,7 @@ for i=1:length(Ly)
 end
 subplot(s1)
 xlabel('h'), ylabel('Gap \Delta')
-legend('Location','best'), xlim([-0.1 6.1])
+legend('Location','best'), xlim([0 9])
 set(gca, 'FontName','Times','FontSize',15)
 
 subplot(s2)

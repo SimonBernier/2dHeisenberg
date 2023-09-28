@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
     //
     double h = 0.;
     double dh = 0.1;
-    int Nh = int(6./dh);
+    int Nh = int(9./dh);
     for( int i = 1; i <= Nh; i++){
         h += dh;
 

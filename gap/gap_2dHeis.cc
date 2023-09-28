@@ -101,8 +101,12 @@ int main(int argc, char *argv[]){
         auto h = double(i)*dh;
 
         // autompo hamiltonian
+        int col = 1;
         for(auto j : range1(N)){
-            ampo += dh * (j%2==0 ? 1. : -1.), "Sz", j;
+            ampo += 1. * pow(-1., col), "Sz", j;
+
+            if(j%Ly == 0)
+                col++;
         }
         H = toMPO(ampo);
 

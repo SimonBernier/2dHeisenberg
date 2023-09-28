@@ -95,18 +95,42 @@ int main(int argc, char *argv[]){
     //
     // h > 0
     //
+    double h = 0.;
     double dh = 0.1;
     int Nh = int(6./dh);
     for( int i = 1; i <= Nh; i++){
-        auto h = double(i)*dh;
+        h += dh;
 
-        // autompo hamiltonian
-        int col = 1;
+        ampo = AutoMPO(sites);
+        for(auto j : lattice){
+            ampo += 0.5, "S+", j.s1, "S-", j.s2;
+            ampo += 0.5, "S-", j.s1, "S+", j.s2;
+            ampo += 1.0, "Sz", j.s1, "Sz", j.s2;
+        }
+        /////// Strip Geometry //////
+        /*int col = 1;
         for(auto j : range1(N)){
-            ampo += dh * pow(-1., col), "Sz", j;
-
+            ampo += h * pow(-1., col), "Sz", j;
             if(j%Ly == 0)
                 col++;
+        }*/
+        /////// Checkerboard Geometry //////
+        int col = 1;
+        for(auto j : range1(N)){
+            if(Ly%2!=0){
+                if(j%2==0)
+                    ampo += +h, "Sz", j;
+                else
+                    ampo += -h, "Sz", j;
+            }
+            else{
+                if(j%2==0)
+                    ampo += +h * pow(-1., col), "Sz", j;
+                else
+                    ampo += -h * pow(-1., col), "Sz", j;
+                if(j%Ly == 0)
+                    col++;    
+            }
         }
         H = toMPO(ampo);
 

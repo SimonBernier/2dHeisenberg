@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
     auto sites = SpinHalf(N);
 
     auto ampo = AutoMPO(sites);
-    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", true});
+    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", false});
 
     //
     // h = 0
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
     PrintData(totalQN(initState));
 
     // 2d ising model parameters
-    auto sweeps1 = Sweeps(10);
+    auto sweeps1 = Sweeps(15);
     sweeps1.maxdim() = 20, 50, 100, 100, 200, 200, 400, 400, 800, 1600;
     sweeps1.cutoff() = 1E-8;
     sweeps1.noise() = 1E-7,1E-8,0.0;
@@ -95,25 +95,49 @@ int main(int argc, char *argv[]){
     //
     // h > 0
     //
+    double h = 0.;
     double dh = 0.1;
-    int Nh = int(6./dh);
+    int Nh = int(9./dh);
     for( int i = 1; i <= Nh; i++){
-        auto h = double(i)*dh;
+        h += dh;
 
-        // autompo hamiltonian
-        int col = 1;
+        ampo = AutoMPO(sites);
+        for(auto j : lattice){
+            ampo += 0.5, "S+", j.s1, "S-", j.s2;
+            ampo += 0.5, "S-", j.s1, "S+", j.s2;
+            ampo += 1.0, "Sz", j.s1, "Sz", j.s2;
+        }
+        /////// Strip Geometry //////
+        /*int col = 1;
         for(auto j : range1(N)){
-            ampo += 1. * pow(-1., col), "Sz", j;
-
+            ampo += h * pow(-1., col), "Sz", j;
             if(j%Ly == 0)
                 col++;
+        }*/
+        /////// Checkerboard Geometry //////
+        int col = 1;
+        for(auto j : range1(N)){
+            if(Ly%2!=0){
+                if(j%2==0)
+                    ampo += +h, "Sz", j;
+                else
+                    ampo += -h, "Sz", j;
+            }
+            else{
+                if(j%2==0)
+                    ampo += +h * pow(-1., col), "Sz", j;
+                else
+                    ampo += -h * pow(-1., col), "Sz", j;
+                if(j%Ly == 0)
+                    col++;    
+            }
         }
         H = toMPO(ampo);
 
         //
         //solve for ground state
         //
-        en0 = dmrg(psi0,H,sweeps1,{"Silent=",true});
+        en0 = dmrg(psi0,H,sweeps2,{"Silent=",true});
         var = inner(H,psi0,H,psi0) - en0*en0;
         maxBondDim = maxLinkDim(psi0);
         printfln("\nh = %0.2f", h);

@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
     auto initState = MPS(state);
     PrintData(totalQN(initState));
 
-    // 2d ising model parameters
+    // 2d heisenberg model parameters
     auto sweeps1 = Sweeps(15);
     sweeps1.maxdim() = 20, 50, 100, 100, 200, 200, 400, 400, 800, 1600;
     sweeps1.cutoff() = 1E-8;

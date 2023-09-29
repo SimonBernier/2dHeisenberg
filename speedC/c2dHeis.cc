@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	auto [enPsi, psi] = dmrg(H, initState, sweeps, {"Silent=", true});
 
 	// make |phi> = Sz|psi>
-	int loc = (Lx / 2 - 1) * Ly + 1; 
+	int loc = 1; //(Lx / 2 - 1) * Ly + 1; 
 	psi.position(loc);
 	auto newA = 2.0 * sites.op("Sz", loc) * psi(loc);
 	newA.noPrime();
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     double tval = 0., dt = 0.1;
     double delta1 =  0.414490771794376*dt; // for 4th order TDVP
     double delta2 = -0.657963087177503*dt;
-    double finalTime = Lx/2;
+    double finalTime = 2.*double(Lx)/3.14159;
     int nt=int(finalTime/dt);
 
     // 4th order TDVP parameters
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
                                             "KrylovOrd",3,
                                             "Quiet",true});
             // check if bond dimension has grown enough
-            if(maxLinkDim(psi)>=2*maxDim){
+            if(maxLinkDim(psi)>=maxDim){
                 GSETDVP = false;
                 printfln("\n --- Starting 2-TDVP --- ");
             }

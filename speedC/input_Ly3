@@ -3,5 +3,6 @@ input
 	Ly = 3
 	Lx = 24
 	h = 0
-	GSETDVP = false
+	truncE = 1E-8
+	GSETDVP = true
 	}

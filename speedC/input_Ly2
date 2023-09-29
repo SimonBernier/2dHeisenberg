@@ -1,0 +1,7 @@
+input
+	{
+	Ly = 2
+	Lx = 16
+	h = 0
+	GSETDVP = true
+	}

@@ -1,5 +1,5 @@
 clearvars
-Ly = 3; Lx = 8*Ly;
+Ly = 2:5; Lx = 8*Ly; N = Ly.*Lx;
 h = 0:0.1:9;
 
 en0 = zeros(length(Ly),length(h)); var0 = en0; maxBondDim0 = en0;
@@ -31,19 +31,13 @@ cd ..\
 nu = 2; z = 1;
 
 f1 = figure(1); f1.set('Position',[50 50 1000 400])
-s1 = subplot(1,2,1, 'Position',[0.1 0.15 0.4 0.8]);
+s1 = subplot(1,2,1, 'Position',[0.1 0.15 0.4 0.8]); box on
 s2 = subplot(1,2,2, 'Position',[0.58 0.15 0.4 0.8]);
 for i=1:length(Ly)
 
     subplot(s1)
     hold on
     p = plot(h,gap(i,:), 'DisplayName',sprintf('Ly=%d',Ly(i)),'LineWidth',1.0);
-    hold off
-    
-    subplot(s2)
-    hold on
-    plot(h*Ly(i)^(1/nu), gap(i,:)*Ly(i)^z, 'DisplayName',sprintf('Ly=%d',Ly(i)),...
-        'Marker','.','MarkerSize',10,'LineStyle', 'none', 'Color', p.Color)
     hold off
 
 end
@@ -52,10 +46,12 @@ xlabel('h'), ylabel('Gap \Delta')
 legend('Location','best'), xlim([0 9])
 set(gca, 'FontName','Times','FontSize',15)
 
-subplot(s2)
-xlabel('h Ly^{1/\nu}'), ylabel('Ly^z\Delta')
-legend('Location','best'), xlim([0 10])
-set(gca, 'FontName','Times','FontSize',15)
+subplot(s2), box on
+minGap = gap(:,1); gapError = (sqrt(var0)+sqrt(var1))./sqrt(N');
+% errorbar(Ly, minGap, gapError(:,1),'.-','MarkerSize',10, 'Color', p.Color)
+plot(Ly, minGap.*(Ly').^2, '.-','MarkerSize',10, 'Color', p.Color)
+xlabel('Ly'), ylabel('\Delta(Ly,h=0)')
+xlim([1 6]), set(gca, 'FontName','Times','FontSize',15)
 
 % exportgraphics(f1, sprintf('scaledGap_Lx_%d.png', Lx), 'Resolution',300);
 

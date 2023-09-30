@@ -1,9 +1,9 @@
 clearvars
 
-Ly = 2; Lx = 8*Ly; h = 0;
+Ly = 4; Lx = 8*Ly; h = 0;
 N = Lx*Ly;
 
-loc = Lx/2;
+loc = 1;
 
 filename = sprintf('Ly_%d_Lx_%d_h_%0.2f_c2dHeis.dat',Ly,Lx,h);
 
@@ -72,10 +72,10 @@ k = find( T < max(tval), 1, 'last');
 v = ft.p1; vErr = gof.rmse/sqrt(gof.dfe+2);
 fprintf("v = %0.4f +/- %0.4f\n", v, round(vErr,1,'significant'))
 
-k = find( T < max(tval), 1, 'first');
-[ft, gof] = fit( T(2:loc-1)', x(2:loc-1)', 'poly1');
-v = -ft.p1; vErr = gof.rmse/sqrt(gof.dfe+2);
-fprintf("v = %0.4f +/- %0.4f\n", v, round(vErr,1,'significant'))
+% k = find( T < max(tval), 1, 'first');
+% [ft, gof] = fit( T(2:loc-1)', x(2:loc-1)', 'poly1');
+% v = ft.p1; vErr = gof.rmse/sqrt(gof.dfe+2);
+% fprintf("v = %0.4f +/- %0.4f\n", v, round(vErr,1,'significant'))
 
 
 %% function to get data

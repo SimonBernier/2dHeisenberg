@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	auto [enPsi, psi] = dmrg(H, initState, sweeps, {"Silent=", true});
 
 	// make |phi> = Sz|psi>
-	int loc = 1; //(Lx / 2 - 1) * Ly + 1; 
+	int loc = (Lx / 2 - 1) * Ly + 1; 
 	psi.position(loc);
 	auto newA = 2.0 * sites.op("Sz", loc) * psi(loc);
 	newA.noPrime();

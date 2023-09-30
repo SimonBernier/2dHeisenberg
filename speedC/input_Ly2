@@ -4,4 +4,5 @@ input
 	Lx = 16
 	h = 0
 	GSETDVP = true
+	truncE = 1E-8
 	}

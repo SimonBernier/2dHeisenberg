@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     double tval = 0., dt = 0.1;
     double delta1 =  0.414490771794376*dt; // for 4th order TDVP
     double delta2 = -0.657963087177503*dt;
-    double finalTime = 2.*double(Lx)/3.14159;
+    double finalTime = double(Lx)/3.14159;
     int nt=int(finalTime/dt);
 
     // 4th order TDVP parameters

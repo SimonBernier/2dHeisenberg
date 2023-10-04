@@ -2,5 +2,8 @@ input
 	{
 	Ly = 4
 	Lx = 16
-	h = 2.6615599908
+	h = 0
+	maxDim = 800
+	GSETDVP = true
+	truncE = 1E-8
 	}

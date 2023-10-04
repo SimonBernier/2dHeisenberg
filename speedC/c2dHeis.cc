@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
   	// We will write into a file with the time-evolved energy density at all times.
     char schar1[128];
-    int n1 = std::sprintf(schar1,"Ly_%d_Lx_%d_h_%0.2f_c2dHeis.dat", Ly, Lx, h);
+    int n1 = std::sprintf(schar1,"Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_c2dHeis.dat", Ly, Lx, h, maxDim);
 
     std::string s1(schar1);
     std::ofstream dataFile;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
 	// 2d heisenberg model parameters
     auto sweeps = Sweeps(10);
-    sweeps.maxdim() = 20, 50, 100, 100, 200, 200, 400, 400, 800, 1600;
+    sweeps.maxdim() = 20, 50, 100, 100, 200, 200, 400, 400, 800, maxDim;
     sweeps.cutoff() = truncE;
     sweeps.noise() = 1E-7,1E-8,0.0;
 

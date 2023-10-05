@@ -179,7 +179,7 @@ int main(int argc, char *argv[]){
     double tval = 0.0; //time
     double delta1 =  0.414490771794376*dt;
     double delta2 = -0.657963087177503*dt;
-    double finalTime = 10*tau;
+    double finalTime = 12*tau;
     int nt = int(finalTime/dt);
 
     // 4th order TDVP parameters
@@ -199,7 +199,9 @@ int main(int argc, char *argv[]){
     ///////// time evolve //////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     printfln("\n --- Starting GSE-TDVP --- ");
-    for(int n=1; n<=nt; n++){
+    auto stopCondition = false;
+
+    for(int n=1; n<=nt && !stopCondition; n++){
 
         tval += dt; //update time vector
 
@@ -245,7 +247,7 @@ int main(int argc, char *argv[]){
             // check if bond dimension has grown enough
             if(maxLinkDim(psi)>=maxDim){
                 GSETDVP = false;
-                printfln("\n --- Starting 2-TDVP --- ");
+                printfln("\n --- Starting 2-TDVP at t = %0.1f --- ", tval+dt);
             }
             // one-site TDVP
             tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
@@ -291,6 +293,11 @@ int main(int argc, char *argv[]){
         datafile << std::endl;
 
         printfln("\nt = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs\n", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
+
+        if( abs(en - enf) < 1E-5){
+            stopCondition = true;
+            printfln("stop condition met, |en-enf| = %0.10f", abs(en-enf));
+        }
 
     }
 

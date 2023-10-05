@@ -6,7 +6,7 @@ input
         maxDim = 512
         truncE = 1E-8
         v = 2
-	    tau = 0.1
+	    tau = 2
         GSETDVP = true
         tanhshift = 3.0
     }

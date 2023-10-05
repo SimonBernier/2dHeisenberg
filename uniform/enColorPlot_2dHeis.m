@@ -1,7 +1,9 @@
 clearvars
 
-Ly = 3; Lx = 4*Ly; h=5.0; tau = 2; maxDim = 512;
-dt = 0.1; tanhshift = 3;
+Ly = 3; Lx = 6*Ly; h=5.0; tau = 2; maxDim = 512;
+dt = 0.1; tanhshift = 4;
+
+R = Ly; center = Lx/2-R:Lx/2+R; N = Lx*(Ly-1);
 
 % cd data_1E-8\
 filename = sprintf("Ly_%d_Lx_%d_h_%0.2f_tau_%0.1f_maxDim_%d_2dHeis_uni.dat",Ly,Lx,h,tau,maxDim);
@@ -22,6 +24,8 @@ set(gca,'FontName','Times','FontSize',15)
 
 imagesc('XData',x,'YData',tval,'CData', localEn_En0)
 colormap('jet'), axis('tight'), clim([minHeatMap maxHeatMap]), colorbar
+
+enCenter = mean(localEn_En0(:,center),2);
 
 %% function to get data
 function [tval, en, enf, enf_en0, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Nx,Ny)

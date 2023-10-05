@@ -78,21 +78,22 @@ int main(int argc, char *argv[]){
     // H at t=0 (gapped ground state)
     auto hvals = hvector(Lx, Ly, 0.0, h, v, tau, tanhshift);
     /////// Checkerboard Geometry //////
-    int col = 1;
-    for(auto j : range1(N)){
-        if(Ly%2!=0){
-            if(j%2==0)
-                ampo += +hvals[j], "Sz", j;
-            else
-                ampo += -hvals[j], "Sz", j;
-        }
-        else{
-            if(j%2==0)
-                ampo += +hvals[j] * pow(-1., col), "Sz", j;
-            else
-                ampo += -hvals[j] * pow(-1., col), "Sz", j;
-            if(j%Ly == 0)
-                col++;
+    for (int i = 1; i <= Lx; i++){
+        for (int j = 1; j <= Ly; j++){
+
+            int index = Ly*(i-1) + j;
+            if(Ly%2!=0){
+                if(j%2==0)
+                    ampo += +hvals[index], "Sz", index;
+                else
+                    ampo += -hvals[index], "Sz", index;
+            }
+            else{
+                if(j%2==0)
+                    ampo += +hvals[index] * pow(-1., i), "Sz", index;
+                else
+                    ampo += -hvals[index] * pow(-1., i), "Sz", index;
+            }
         }
     }
     auto H = toMPO(ampo);
@@ -218,21 +219,22 @@ int main(int argc, char *argv[]){
             ampo += 1.0, "Sz", j.s1, "Sz", j.s2;
         }
         /////// Checkerboard Geometry //////
-        int col = 1;
-        for(auto j : range1(N)){
-            if(Ly%2!=0){
-                if(j%2==0)
-                    ampo += +hvals[j], "Sz", j;
-                else
-                    ampo += -hvals[j], "Sz", j;
-            }
-            else{
-                if(j%2==0)
-                    ampo += +hvals[j] * pow(-1., col), "Sz", j;
-                else
-                    ampo += -hvals[j] * pow(-1., col), "Sz", j;
-                if(j%Ly == 0)
-                    col++;
+        for (int i = 1; i <= Lx; i++){
+            for (int j = 1; j <= Ly; j++){
+
+                int index = Ly*(i-1) + j;
+                if(Ly%2!=0){
+                    if(j%2==0)
+                        ampo += +hvals[index], "Sz", index;
+                    else
+                        ampo += -hvals[index], "Sz", index;
+                }
+                else{
+                    if(j%2==0)
+                        ampo += +hvals[index] * pow(-1., i), "Sz", index;
+                    else
+                        ampo += -hvals[index] * pow(-1., i), "Sz", index;
+                }
             }
         }
         H = toMPO(ampo);
@@ -379,7 +381,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
             // interpolation and average of the nearest-neighbour interactions
             if(j < Ly){
-                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1])/double(Ly-1);
+                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1]);
 
                 // add left/right boundary terms
                 if( i==1 ){
@@ -391,7 +393,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
             }
 
             // average of the long-range interactions
-            localEnergy[i-1] += tempEnLR[i-1][j-1]/double(Ly);
+            localEnergy[i-1] += tempEnLR[i-1][j-1];
 
         } // for j
     } // for i

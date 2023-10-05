@@ -357,7 +357,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
             // interpolation and average of the nearest-neighbour interactions
             if(j < Ly){
-                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1])/double(Ly-1);
+                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1]);
 
                 // add left/right boundary terms
                 if( i==1 ){
@@ -369,7 +369,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
             }
 
             // average of the long-range interactions
-            localEnergy[i-1] += tempEnLR[i-1][j-1]/double(Ly);
+            localEnergy[i-1] += tempEnLR[i-1][j-1];
 
         } // for j
     } // for i

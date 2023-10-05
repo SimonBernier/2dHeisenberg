@@ -245,7 +245,7 @@ int main(int argc, char *argv[]){
                                             "KrylovOrd",3,
                                             "Quiet",true});
             // check if bond dimension has grown enough
-            if(maxLinkDim(psi)>=maxDim){
+            if(maxLinkDim(psi)>=3*maxDim/2){
                 GSETDVP = false;
                 printfln("\n --- Starting 2-TDVP --- ");
             }

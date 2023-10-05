@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     //make header
-    datafile << "time" << " " << "en(t)" << " " << "en(t)-en0" << " " << "svN(t)" << " "
+    datafile << "time" << " " << "en(t)" << " " << "enf(t)" << " " << "enf(t)-en0" << " " << "svN(t)" << " "
              << "localEn(t)" << " " << "localEn(t)-localEn0" << " " << "SzSz(t)" << " " << "Sperp(t)" << std::endl;
 
     auto N = Ly * Lx;
@@ -145,8 +145,9 @@ int main(int argc, char *argv[]){
     }
 
     //DMRG to find ground state at t=0
-    auto [en0,psi0] = dmrg(Hfinal,initState,sweeps,{"Silent=",true});
     auto [en,psi] = dmrg(H,initState,sweeps,{"Silent=",true});
+    auto [en0,psi0] = dmrg(Hfinal,psi,sweeps,{"Silent=",true});
+    auto enf = inner(psi, Hfinal, psi);
 
     // calculate von Neumann S
     auto svN = vonNeumannS(psi, N/2);
@@ -156,11 +157,11 @@ int main(int argc, char *argv[]){
     for(int b = 1; b<=N; b++){
         auto [zz, perp] = spinspin(N/2+1, b, psi, sites);
         szsz[b-1] = zz;
-        sperpsperp[b-1] = perp; 
+        sperpsperp[b-1] = perp;
     }
 
     // store data to file
-    datafile << 0.0 << " " << en << " " << en-en0 << " " << svN << " ";
+    datafile << 0.0 << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
     for (int j=0; j < Lx-1; j++){
         datafile << localEn[j] << " ";
     }
@@ -264,6 +265,8 @@ int main(int argc, char *argv[]){
 
         auto tdvpTime = (double)(std::clock() - tStartTDVP)/CLOCKS_PER_SEC;
 
+        //calculate energy wrt final Hamiltonian
+        enf = innerC(psi, Hfinal, psi).real();
         //calculate entanglement entropy
         svN = vonNeumannS(psi, N/2);
         // calculate local energy density <psi(t)|H(x,y)|psi(t)>
@@ -274,7 +277,7 @@ int main(int argc, char *argv[]){
             sperpsperp[b-1] = perp; 
         }
 
-        datafile << tval << " " << en << " " << en-en0 << " " << svN << " ";
+        datafile << tval << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
         for (int j = 0; j < Lx-1; j++){
             datafile << localEn[j] << " ";
         }
@@ -289,7 +292,7 @@ int main(int argc, char *argv[]){
         }
         datafile << std::endl;
 
-        printfln("t = %0.2f, en-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs", tval, en-en0, svN, maxLinkDim(psi), tdvpTime);
+        printfln("t = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
 
     }
 
@@ -311,7 +314,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
                                 std::vector<std::vector<ITensor>> ZZ_LR){
 
     std::vector<std::vector<double>> tempEn(Lx, std::vector<double>(Ly-1, 0.0));
-    std::vector<std::vector<double>> tempEnLR(Lx-1, std::vector<double>(Ly-1, 0.0));
+    std::vector<std::vector<double>> tempEnLR(Lx-1, std::vector<double>(Ly, 0.0));
 
     std::vector<double> localEnergy(Lx-1, 0.0); // interpolated energy density
 
@@ -322,6 +325,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
             int index = (i-1)*Ly + j;
             psi.position(index);
             auto ket = psi(index)*psi(index+1);
+
             tempEn[i-1][j-1] = eltC(dag(prime(ket,"Site")) * PM[i-1][j-1] * ket).real();
             tempEn[i-1][j-1] += eltC(dag(prime(ket,"Site")) * MP[i-1][j-1] * ket).real();
             tempEn[i-1][j-1] += eltC(dag(prime(ket,"Site")) * ZZ[i-1][j-1] * ket).real();
@@ -346,18 +350,22 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
     for(int i=1; i<Lx; i++){
         for(int j=1; j<=Ly; j++){ 
 
-            localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1]);
+            // interpolation and average of the nearest-neighbour interactions
+            if(j < Ly){
+                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1])/double(Ly-1);
 
-            if(j < Ly)
-                localEnergy[i-1] += tempEnLR[i-1][j-1];
-
-            // add left/right boundary terms
-            if( i==1 ){
-                localEnergy[i-1] += 0.5 * tempEn[i-1][j-1];
+                // add left/right boundary terms
+                if( i==1 ){
+                    localEnergy[i-1] += 0.5 * tempEn[i-1][j-1];
+                }
+                else if( i==Lx-1 ){
+                    localEnergy[i-1] += 0.5 * tempEn[i][j-1];
+                }
             }
-            else if( i==Lx-1 ){
-                localEnergy[i-1] += 0.5 * tempEn[i][j-1];
-            } // if i=Lx-1
+
+            // average of the long-range interactions
+            localEnergy[i-1] += tempEnLR[i-1][j-1]/double(Ly);
+
         } // for j
     } // for i
 

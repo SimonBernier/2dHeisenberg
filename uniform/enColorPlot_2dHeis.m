@@ -8,7 +8,7 @@ filename = sprintf("Ly_%d_Lx_%d_h_%0.2f_tau_%0.1f_maxDim_%d_2dHeis_uni.dat",Ly,L
 data = importdata(filename,' ',1);
 % cd ..\
 
-[tval, en, en_en0, svn, localEn, localEn_En0, corrZ, corrPerp] = collectData(data, Lx, Ly);
+[tval, en, enf, enf_en0, svn, localEn, localEn_En0, corrZ, corrPerp] = collectData(data, Lx, Ly);
 Nt = length(tval); x = (1:Lx-1)-Lx/2+0.5; y = 1:Ly;
 
 minHeatMap = min(0, min(localEn_En0(:)));
@@ -24,14 +24,15 @@ imagesc('XData',x,'YData',tval,'CData', localEn_En0)
 colormap('jet'), axis('tight'), clim([minHeatMap maxHeatMap]), colorbar
 
 %% function to get data
-function [tval, en0, en, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Nx,Ny)
+function [tval, en, enf, enf_en0, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Nx,Ny)
     tval = A.data(1:end,1);
-    en0 = A.data(1:end,2);
-    en = A.data(1:end,3);
-    svn = A.data(1:end,4);
+    en = A.data(1:end,2);
+    enf = A.data(1:end,3);
+    enf_en0 = A.data(1:end,4);
+    svn = A.data(1:end,5);
     N = (Nx-1)*Ny;
-    localEn0 = A.data(1:end,   5 : Nx+3);
-    localEn = A.data(1:end,  Nx+4 : 2*Nx+2);
-    corrZ = A.data(1:end,  2*Nx+3 : 2*Nx+N+4);
-    corrPerp = A.data(1:end,   2*Nx+N+5:end);
+    localEn0 = A.data(1:end,   6 : Nx+4);
+    localEn = A.data(1:end,  Nx+5 : 2*Nx+3);
+    corrZ = A.data(1:end,  2*Nx+4 : 2*Nx+N+5);
+    corrPerp = A.data(1:end,   2*Nx+N+6:end);
 end

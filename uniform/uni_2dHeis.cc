@@ -292,7 +292,7 @@ int main(int argc, char *argv[]){
         }
         datafile << std::endl;
 
-        printfln("t = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
+        printfln("\nt = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs\n", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
 
     }
 

@@ -1,0 +1,11 @@
+input  
+    {
+        Ly = 3
+        Lx = 12
+        h = 5
+        maxDim = 512
+        truncE = 1E-8
+        v = 1.57
+	    tau = 2
+        tanhshift = 3.0
+    }

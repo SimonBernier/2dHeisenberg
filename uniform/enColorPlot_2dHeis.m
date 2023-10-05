@@ -1,6 +1,6 @@
 clearvars
 
-Ly = 2; Lx = 4*Ly; h=5.0; tau = 2; maxDim = 512;
+Ly = 3; Lx = 4*Ly; h=5.0; tau = 2; maxDim = 512;
 dt = 0.1; tanhshift = 3;
 
 % cd data_1E-8\

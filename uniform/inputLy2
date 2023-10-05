@@ -1,11 +1,10 @@
 input  
     {
         Ly = 2
-        Lx = 8
+        Lx = 12
         h = 5
         maxDim = 512
         truncE = 1E-8
-        v = 1.57
-	    tau = 2
+	    tau = 0.2
         GSETDVP = true
     }

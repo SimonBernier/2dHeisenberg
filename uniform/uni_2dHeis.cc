@@ -38,10 +38,9 @@ int main(int argc, char *argv[]){
     auto Ly = input.getInt("Ly", 3);
     auto h = input.getReal("h", 5.0);
     auto tau = input.getReal("tau",1.0);
-    auto v = input.getReal("v",1.57);
     auto truncE = input.getReal("truncE", 1E-8);
     auto maxDim = input.getInt("maxDim", 128);
-    auto tanhshift = input.getReal("tanhshift",3.0);
+    auto tanhshift = input.getReal("tanhshift",4.0);
     auto dt = input.getReal("dt",0.1);
     auto GSETDVP = input.getYesNo("GSETDVP",true);
 
@@ -180,8 +179,7 @@ int main(int argc, char *argv[]){
     double tval = 0.0; //time
     double delta1 =  0.414490771794376*dt;
     double delta2 = -0.657963087177503*dt;
-    //double finalTime = 0.5*double(Lx)/1.57 + 0.5*double(Lx)/v + 2.0*tau*tanhshift; // 0.5*Lx/c + 0.5*Lx/v + 2*tau*tshift
-    double finalTime = 8*tau;
+    double finalTime = 10*tau;
     int nt = int(finalTime/dt);
 
     // 4th order TDVP parameters

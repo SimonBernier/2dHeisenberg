@@ -83,13 +83,13 @@ int main(int argc, char *argv[]){
 
             int index = Ly*(i-1) + j;
             if(Ly%2!=0){
-                if(j%2==0)
+                if(index%2==0)
                     ampo += +hvals[index], "Sz", index;
                 else
                     ampo += -hvals[index], "Sz", index;
             }
             else{
-                if(j%2==0)
+                if(index%2==0)
                     ampo += +hvals[index] * pow(-1., i), "Sz", index;
                 else
                     ampo += -hvals[index] * pow(-1., i), "Sz", index;
@@ -224,13 +224,13 @@ int main(int argc, char *argv[]){
 
                 int index = Ly*(i-1) + j;
                 if(Ly%2!=0){
-                    if(j%2==0)
+                    if(index%2==0)
                         ampo += +hvals[index], "Sz", index;
                     else
                         ampo += -hvals[index], "Sz", index;
                 }
                 else{
-                    if(j%2==0)
+                    if(index%2==0)
                         ampo += +hvals[index] * pow(-1., i), "Sz", index;
                     else
                         ampo += -hvals[index] * pow(-1., i), "Sz", index;
@@ -343,7 +343,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
                                 std::vector<std::vector<ITensor>> ZZ_LR){
 
     std::vector<std::vector<double>> tempEn(Lx, std::vector<double>(Ly-1, 0.0));
-    std::vector<std::vector<double>> tempEnLR(Lx-1, std::vector<double>(Ly, 0.0));
+    std::vector<std::vector<double>> tempEnLR(Lx-1);
 
     std::vector<double> localEnergy(Lx-1, 0.0); // interpolated energy density
 
@@ -370,7 +370,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
         for(int m = 0; m<Ly; m++){ // long-range
 
-            tempEnLR[i-1][m] = lrEnergy[m];
+            tempEnLR[i-1] += lrEnergy[m];
 
         }// for m
     }// for i
@@ -379,7 +379,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
     for(int i=1; i<Lx; i++){
         for(int j=1; j<=Ly; j++){ 
 
-            // interpolation and average of the nearest-neighbour interactions
+            // interpolation and addition of the nearest-neighbour interactions
             if(j < Ly){
                 localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1]);
 
@@ -392,8 +392,8 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
                 }
             }
 
-            // average of the long-range interactions
-            localEnergy[i-1] += tempEnLR[i-1][j-1];
+            // add of the long-range interactions
+            localEnergy[i-1] += tempEnLR[i-1];
 
         } // for j
     } // for i

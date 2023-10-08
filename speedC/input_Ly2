@@ -1,7 +1,7 @@
 input
 	{
 	Ly = 2
-	Lx = 8
+	Lx = 13
 	h = 0
 	GSETDVP = true
 	truncE = 1E-8

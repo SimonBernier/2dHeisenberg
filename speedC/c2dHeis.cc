@@ -20,17 +20,18 @@ int main(int argc, char *argv[])
     }
     auto input = InputGroup(argv[1],"input");
 
-    auto Ly = input.getInt("Ly", 3);
-	auto Lx = input.getInt("Lx", 8);
+    auto Ly = input.getInt("Ly", 2);
+	auto Lx = input.getInt("Lx", 13);
     auto h = input.getReal("h", 1.);
     auto truncE = input.getReal("truncE", 1E-8);
     auto maxDim = input.getInt("maxDim", 512);
 	auto GSETDVP = input.getYesNo("GSETDVP",true);
+    auto dt = input.getReal("dt",0.1);
 	println();
 
   	// We will write into a file with the time-evolved energy density at all times.
     char schar1[128];
-    int n1 = std::sprintf(schar1,"Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_c2dHeis.dat", Ly, Lx, h, maxDim);
+    int n1 = std::sprintf(schar1,"Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_gse_%d_c2dHeis.dat", Ly, Lx, h, maxDim, GSETDVP);
 
     std::string s1(schar1);
     std::ofstream dataFile;
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
 
   	auto N = Ly * Lx;
     auto sites = SpinHalf(N);
-  	auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", false});
+  	auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", true});
 
 	auto ampo = AutoMPO(sites);
     for(auto j : lattice){
@@ -89,9 +90,16 @@ int main(int argc, char *argv[])
 
 	// calculate ground state
 	auto [enPsi, psi] = dmrg(H, initState, sweeps, {"Silent=", true});
+    auto dim0 = maxLinkDim(psi); //defines max dimension of critical state
 
 	// make |phi> = Sz|psi>
-	int loc = (Lx / 2 - 1) * Ly + 1; 
+	int loc;
+    if(Lx%2==0){
+        loc = (Lx / 2 - 1) * Ly + 1;
+    }
+    else{
+        loc = ( (Lx + 1)/2 - 1 ) * Ly + 1;
+    }
 	psi.position(loc);
 	auto newA = 2.0 * sites.op("Sz", loc) * psi(loc);
 	newA.noPrime();
@@ -116,7 +124,7 @@ int main(int argc, char *argv[])
 	printfln("time = %0.1f; phi energy = %0.3f, max link dim is %d", 0, enPhi, maxLinkDim(psi));
 
 	// time evolution parameters.
-    double tval = 0., dt = 0.1;
+    double tval = 0.;
     double delta1 =  0.414490771794376*dt; // for 4th order TDVP
     double delta2 = -0.657963087177503*dt;
     double finalTime = double(Lx)/3.14159;
@@ -143,28 +151,34 @@ int main(int argc, char *argv[])
 		std::clock_t tStartTDVP = std::clock(); // check time for performance
 		if(GSETDVP){
             // time evolve with GSE-TDVP
-            std::vector<int> dimK = {maxLinkDim(psi), maxLinkDim(psi)};
-            addBasis(psi, H, dimK, {"Cutoff",truncE,
+            //std::vector<int> dimK = {maxLinkDim(psi), maxLinkDim(psi)};
+            std::vector<Real> truncK = {0.1*truncE, 0.1*truncE};
+            //addBasis(psi, H, dimK, {"Cutoff",truncE,
+            addBasis(psi, H, truncK, {"Cutoff",truncE,
                                             "Method", "DensityMatrix",
                                             "KrylovOrd",3,
                                             "Quiet",true});
             // check if bond dimension has grown enough
-            if(maxLinkDim(psi)>=maxDim){
+            if(maxLinkDim(psi)>maxDim){
                 GSETDVP = false;
-                printfln("\n --- Starting 2-TDVP --- ");
+                printfln("\n --- Starting 2-TDVP at t = %0.2f --- ", tval+dt);
             }
             // one-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1});
-            enPhi = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            enPhi = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            if(maxLinkDim(psi)>dim0){
+                GSETDVP = false;
+                printfln("\n --- Starting 2-TDVP at t = %0.2f --- ", tval+dt);
+            }
         }
         else{
 			if(n==1)
 				printfln("\n --- Starting 2-TDVP --- ");
             // two-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2});
-            enPhi = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
+            enPhi = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
         }
 
         auto tdvpTime = (double)(std::clock() - tStartTDVP)/CLOCKS_PER_SEC;    
@@ -182,7 +196,7 @@ int main(int argc, char *argv[])
 		}
 		dataFile << std::endl;
 
-      	printfln("\n----\n Iteration %d, time = %0.2f; phi energy = %0.3f, maxDim = %d, tdvp time = %0.3fs\n----\n", n, tval, enPhi, maxLinkDim(psi),tdvpTime);
+      	printfln("\n----\n Iteration %d, time = %0.2f; phi energy = %0.3f, maxDim = %d, tdvp time = %0.3fs\n----", n, tval, enPhi, maxLinkDim(psi),tdvpTime);
 
 
   	} // for n

@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
     }
     auto Hfinal = toMPO(ampo);
     // H at t=0 (gapped ground state)
-    auto hvals = hvector(Lx, Ly, 0.0, h, v, tau, tanhshift);
+    std::vector<double> hvals = hvector(Lx, Ly, 0.0, h, v, tau, tanhshift);
     /////// Checkerboard Geometry //////
     for (int i = 1; i <= Lx; i++){
         for (int j = 1; j <= Ly; j++){
@@ -111,10 +111,6 @@ int main(int argc, char *argv[]){
     sweeps.maxdim() = 20, 50, 100, 100, 200, 200, 400, 400, 800, maxDim;
     sweeps.cutoff() = truncE;
     sweeps.noise() = 1E-6, 1E-7, 1E-8, 0;
-
-    // calculate initial local energy density
-    std::vector<double> localEn0(Lx-1,0.0), localEn(Lx-1,0.0); // local energy density vector
-    std::vector<double> szsz(N,0.0), sperpsperp(N,0.0);
 
     //make 2D vector of ITensor for local energy operators
     //long-range interactions have the same structure as nearest-neighbour when we use swap gates
@@ -155,13 +151,17 @@ int main(int argc, char *argv[]){
     // calculate von Neumann S
     auto svN = vonNeumannS(psi, N/2);
     // calculate local energy density
-    localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi0, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
-    localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+    std::vector<double> localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi0, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+    std::vector<double> localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+
+    /* // calculate spin correlation
+    std::vector<double> szsz(N,0.0), sperpsperp(N,0.0);
     for(int b = 1; b<=N; b++){
         auto [zz, perp] = spinspin(N/2+1, b, psi, sites);
         szsz[b-1] = zz;
         sperpsperp[b-1] = perp; 
     }
+    */
 
     // store data to file
     datafile << 0.0 << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
@@ -171,12 +171,13 @@ int main(int argc, char *argv[]){
     for (int j=0; j < Lx-1; j++){
         datafile << localEn[j]-localEn0[j] << " ";
     }
-    for (int j = 0; j < N; j++){
+    /*for (int j = 0; j < N; j++){
         datafile << szsz[j] << " ";
     }
     for (int j = 0; j < N; j++){
         datafile << sperpsperp[j] << " ";
     }
+    */
     datafile << std::endl;
 
     // time evolution parameters
@@ -190,11 +191,11 @@ int main(int argc, char *argv[]){
     auto sweeps1 = Sweeps(2); //two forward time steps of delta1
     sweeps1.maxdim() = maxDim;
     sweeps1.cutoff() = truncE;
-    sweeps1.niter() = 10;
+    sweeps1.niter() = 15;
     auto sweeps2 = Sweeps(1); //one backward time step of delta2
     sweeps2.maxdim() = maxDim;
     sweeps2.cutoff() = truncE;
-    sweeps2.niter() = 10;
+    sweeps2.niter() = 15;
 
     printfln("\ncritical GS: energy = %0.3f, maxDim = %d\n", en0, maxLinkDim(psi0));
     printfln("t = %0.2f, energy = %0.3f, SvN = %0.3f, maxDim = %d\n", tval, en, svN, maxLinkDim(psi));
@@ -273,13 +274,15 @@ int main(int argc, char *argv[]){
         enf = innerC(psi, Hfinal, psi).real();
         //calculate entanglement entropy
         svN = vonNeumannS(psi, N/2);
-        // calculate local energy density <psi(t)|H(x,y)|psi(t)>
+        // calculate local energy density <psi(t)|H(x,t)|psi(t)>
         localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+        /*
         for(int b = 1; b<=N; b++){
             auto [zz, perp] = spinspin(N/2+1, b, psi, sites);
             szsz[b-1] = zz;
             sperpsperp[b-1] = perp; 
         }
+        */
 
         datafile << tval << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
         for (int j = 0; j < Lx-1; j++){
@@ -288,12 +291,14 @@ int main(int argc, char *argv[]){
         for (int j = 0; j < Lx-1; j++){
             datafile << localEn[j]-localEn0[j] << " ";
         }
+        /*
         for (int j = 0; j < N; j++){
             datafile << szsz[j] << " ";
         }
         for (int j = 0; j < N; j++){
             datafile << sperpsperp[j] << " ";
         }
+        */
         datafile << std::endl;
 
         printfln("\nt = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs\n", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
@@ -319,7 +324,11 @@ std::vector<double> hvector(int Lx, int Ly, double tval, double h, double v, dou
 
     for (int i = 1; i <= Lx; i++){
 
-        double f = abs(double(i-Lx/2)-0.5)/v - tval;
+        double f;
+        if( Lx%2 == 0 )
+            f = abs(double(i-Lx/2)-0.5)/v - tval;
+        else
+            f = abs(double(i-(Lx+1)/2)-0.5)/v - tval;
 
         for (int j = 1; j <= Ly; j++){
 
@@ -342,8 +351,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
                                 std::vector<std::vector<ITensor>> MP_LR,
                                 std::vector<std::vector<ITensor>> ZZ_LR){
 
-    std::vector<std::vector<double>> tempEn(Lx, std::vector<double>(Ly-1, 0.0));
-    std::vector<std::vector<double>> tempEnLR(Lx-1);
+    std::vector<double> tempEn(Lx, 0.0);
 
     std::vector<double> localEnergy(Lx-1, 0.0); // interpolated energy density
 
@@ -355,13 +363,14 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
             psi.position(index);
             auto ket = psi(index)*psi(index+1);
 
-            tempEn[i-1][j-1] = eltC(dag(prime(ket,"Site")) * PM[i-1][j-1] * ket).real();
-            tempEn[i-1][j-1] += eltC(dag(prime(ket,"Site")) * MP[i-1][j-1] * ket).real();
-            tempEn[i-1][j-1] += eltC(dag(prime(ket,"Site")) * ZZ[i-1][j-1] * ket).real();
+            tempEn[i-1] += eltC(dag(prime(ket,"Site")) * PM[i-1][j-1] * ket).real();
+            tempEn[i-1] += eltC(dag(prime(ket,"Site")) * MP[i-1][j-1] * ket).real();
+            tempEn[i-1] += eltC(dag(prime(ket,"Site")) * ZZ[i-1][j-1] * ket).real();
 
         }// for j
     }// for i
-
+    
+    /*
     // MPS long-range interactions
     for(int i=1; i<Lx; i++){
 
@@ -370,32 +379,27 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
         for(int m = 0; m<Ly; m++){ // long-range
 
-            tempEnLR[i-1] += lrEnergy[m];
+            localEnergy[i-1] += lrEnergy[m];
 
         }// for m
     }// for i
+    */
 
     // interpolate tempEn into localEnergy
-    for(int i=1; i<Lx; i++){
-        for(int j=1; j<=Ly; j++){ 
+    for(int i=1; i<=Lx; i++){
 
-            // interpolation and addition of the nearest-neighbour interactions
-            if(j < Ly){
-                localEnergy[i-1] += 0.5 * (tempEn[i-1][j-1] + tempEn[i][j-1]);
+        // interpolation and addition of the nearest-neighbour interactions
+        // add left/right boundary terms
+        if( i==1 ){
+            localEnergy[i-1] += tempEn[i-1] + 0.5*tempEn[i];
+        }
+        else if( i==Lx-1 ){
+            localEnergy[i-1] += 0.5*tempEn[i-1] + tempEn[i];
+        }
+        else{
+            localEnergy[i-1] += 0.5*tempEn[i-1] + 0.5*tempEn[i];
+        }        
 
-                // add left/right boundary terms
-                if( i==1 ){
-                    localEnergy[i-1] += 0.5 * tempEn[i-1][j-1];
-                }
-                else if( i==Lx-1 ){
-                    localEnergy[i-1] += 0.5 * tempEn[i][j-1];
-                }
-            }
-
-            // add of the long-range interactions
-            localEnergy[i-1] += tempEnLR[i-1];
-
-        } // for j
     } // for i
 
     return localEnergy;
@@ -432,7 +436,7 @@ std::vector<double> calculateLRenergy(int i, int Ly, MPS psi, SiteSet sites,
 
         psi.position(index+2*m);
         auto ket = psi(index+2*m)*psi(index+2*m+1);
-        energy[m] = eltC( dag(prime(ket,"Site")) * PM_LR[i-1][m] * ket).real();
+        energy[m] += eltC( dag(prime(ket,"Site")) * PM_LR[i-1][m] * ket).real();
         energy[m] += eltC( dag(prime(ket,"Site")) * MP_LR[i-1][m] * ket).real();
         energy[m] += eltC( dag(prime(ket,"Site")) * ZZ_LR[i-1][m] * ket).real();
 

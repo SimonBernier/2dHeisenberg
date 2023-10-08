@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
     auto sites = SpinHalf(N);
 
     auto ampo = AutoMPO(sites);
-    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", false});
+    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", true});
 
     //
     // h = 0

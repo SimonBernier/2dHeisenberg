@@ -1,12 +1,12 @@
 input  
     {
         Ly = 3
-        Lx = 18
+        Lx = 16
         h = 5
         maxDim = 512
         truncE = 1E-8
         v = 2
-	    tau = 2
+	    tau = 0.2
         tanhshift = 3.0
         GSETDVP = true
     }

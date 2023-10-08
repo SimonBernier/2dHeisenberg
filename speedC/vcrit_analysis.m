@@ -1,6 +1,7 @@
 clearvars
 
-Ly = 2:5; Lx = 8*Ly; h = 0; maxDim = 512; LyPlot = 2;
+Ly = 4; Lx = 9; h = 0; maxDim = 800; LyPlot = 5;
+gse = 1 ;
 
 v = zeros(size(Ly)); vErr = v; deltaE = v;
 
@@ -8,11 +9,13 @@ for i=1:length(Ly)
     fprintf("Ly = %d\n", Ly(i))
     loc = Lx(i)/2;
 
-    filename = sprintf('Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_c2dHeis.dat',Ly(i),Lx(i),h,maxDim);
+    filename = sprintf('Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_gse_%d_c2dHeis.dat',Ly(i),Lx(i),h,maxDim,gse);
+    % filename = sprintf('Ly_%d_Lx_%d_h_%0.2f_maxDim_%d_c2dHeis.dat',Ly(i),Lx(i),h,maxDim);
 
     %% get 2nd order method
     data = importdata(filename,' ',1);
     [tval, enPsi, maxBondDim, enPhi, svn] = collectData(data);
+    dt = tval(2) - tval(1);
     
     deltaSVN = svn; deltaSVN(1,:) = zeros(size(deltaSVN(1,:)));
     x = (1:Lx(i)-1) - loc + 0.5;
@@ -97,19 +100,32 @@ for i=1:length(Ly)
     end
 
     fprintf("\tv = %0.4f +/- %0.4f\n", (vR+vL)/2, round(sqrt( (vErrR)^2+(vErrL)^2 )/2 ,1,'significant'))
-    fprintf("\tEnergy Diff = %0.4f%% \n", (enPhi(max(T)*10+1)-enPhi(1))/enPhi(1)*100)
+    fprintf("\tEnergy Diff = %0.4f%% \n", (enPhi( max(T)/dt + 1)-enPhi(1))/enPhi(1)*100)
 
     v(i) = (vR+vL)/2; vErr(i) = sqrt( (vErrR)^2+(vErrL)^2 )/2;
-    deltaE(i) = (enPhi(max(T)*10+1)-enPhi(1))/enPhi(1)*100;
+    deltaE(i) = (enPhi( max(T)/dt+1)-enPhi(1))/enPhi(1)*100;
 
 end
 figure(5);
+hold on
 p = plot(Ly,v,'.','MarkerSize',15);
-hold on, errorbar(Ly,v,vErr,'Color',p.Color)
+errorbar(Ly,v,vErr,'Color',p.Color)
 plot([2 5],pi/2*[1 1], '--r'), hold off
 xlabel('Ly'), ylabel('v')
 xlim([1.9 5.1])
 set(gca,'LineWidth',1,'FontName','Times','FontSize',15)
+
+assymetry = svn(:,(Lx-1)/2:-1:1) - svn(:, (Lx-1)/2+1:Lx-1);
+figure(6)
+imagesc('XData',x((Lx-1)/2+1:Lx-1), 'YData',tval,'CData',abs(assymetry))
+colorbar, xlabel('x'), ylabel('t')
+
+figure(7)
+hold on
+totalAssym = sum(abs(assymetry),2);
+plot(tval, totalAssym, 'DisplayName', sprintf("GSE %d, dt = %0.3f", gse, dt))
+hold off
+legend()
 
 %% function to get data
 function [tval, en_psi, maxBondDim, en_phi, svn] = collectData(A)

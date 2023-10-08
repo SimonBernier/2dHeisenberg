@@ -1,7 +1,7 @@
 input
 	{
 	Ly = 4
-	Lx = 16
+	Lx = 9
 	h = 0
 	maxDim = 800
 	GSETDVP = true

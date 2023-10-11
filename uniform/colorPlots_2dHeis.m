@@ -1,6 +1,6 @@
 clearvars
 
-Ly = 4; Lx = 21; h=5.0; tau = 0.2; maxDim = 512;
+Ly = 4; Lx = 25; h=5.0; tau = 0.2; maxDim = 512;
 dt = 0.1; tanhshift = 4; gse = 1;
 
 R = Ly/2; center = (Lx+1)/2 + (-R:R);
@@ -46,24 +46,24 @@ clim( [min(corrPerp,[],'all'), max(corrPerp(:,[1:(Lx-1)/2 (Lx+1)/2+1:end]),[],'a
 
 enCenter = mean(localEn_En0(:,center),2);
 
-enAssym = localEn_En0(:,(Lx-1)/2:-1:1) - localEn_En0(:, (Lx-1)/2+1:Lx-1);
-enAssymTot = sum(abs(enAssym),2);
+enAsym = localEn_En0(:,(Lx-1)/2:-1:1) - localEn_En0(:, (Lx-1)/2+1:Lx-1);
+enAsymTot = sum(abs(enAsym),2);
 
-svnAssym = svn(:,(Lx-1)/2:-1:1) - svn(:, (Lx-1)/2+1:Lx-1);
-svnAssymTot = sum(abs(svnAssym),2);
+svnAsym = svn(:,(Lx-1)/2:-1:1) - svn(:, (Lx-1)/2+1:Lx-1);
+svnAsymTot = sum(abs(svnAsym),2);
 
-corrZAssym = corrZ(:,(Lx-1)/2:-1:1) - corrZ(:, (Lx+1)/2+1:Lx);
-corrZAssymTot = sum(abs(corrZAssym),2);
+corrZAsym = corrZ(:,(Lx-1)/2:-1:1) - corrZ(:, (Lx+1)/2+1:Lx);
+corrZAsymTot = sum(abs(corrZAsym),2);
 
-corrPAssym = corrPerp(:,(Lx-1)/2:-1:1) - corrPerp(:, (Lx+1)/2+1:Lx);
-corrPAssymTot = sum(abs(corrPAssym),2);
+corrPAsym = corrPerp(:,(Lx-1)/2:-1:1) - corrPerp(:, (Lx+1)/2+1:Lx);
+corrPAsymTot = sum(abs(corrPAsym),2);
 
 figure(2), clf, box on
 hold on
-plot(tval, enAssymTot, 'DisplayName','en')
-plot(tval, svnAssymTot, 'DisplayName','svn')
-plot(tval, corrZAssymTot, 'DisplayName','corrZ')
-plot(tval, corrPAssymTot, 'DisplayName','corrP')
+plot(tval, enAsymTot, 'DisplayName','en')
+plot(tval, svnAsymTot, 'DisplayName','svn')
+plot(tval, corrZAsymTot, 'DisplayName','corrZ')
+plot(tval, corrPAsymTot, 'DisplayName','corrP')
 hold off
 ylabel('\Delta L/R'), xlabel('Time'), legend('Location','best')
 set(gca,'FontName','Times','FontSize',15)

@@ -1,20 +1,20 @@
 clearvars
-Ly = 2:5; Lx = 8*Ly; N = Ly.*Lx;
-h = 0:0.1:9;
+Ly = [2 4 6]; Lx = 25; N = Ly.*Lx;
+h = 0:0.5:9;
 
 en0 = zeros(length(Ly),length(h)); var0 = en0; maxBondDim0 = en0;
 gap = en0; var1 = en0; maxBondDim1 = en0;
 
-cd data1E-8\
+% cd data1E-8\
 for i=1:length(Ly)
 
-    filename = sprintf('Ly_%d_Lx_%d_2dHeis_gap_checker.dat',Ly(i),Lx(i));
+    filename = sprintf('Ly_%d_Lx_%d_2dHeis_gap.dat',Ly(i),Lx);
     A = importdata(filename,' ',1);
     [~, en0(i,:), var0(i,:), maxBondDim0(i,:),...
      gap(i,:), var1(i,:), maxBondDim1(i,:)] = accessData(A);   
 
 end
-cd ..\
+% cd ..\
 
 %% Fit the minimum gap
 % minGap = gap(:,1);

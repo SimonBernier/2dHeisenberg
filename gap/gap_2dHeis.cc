@@ -70,11 +70,11 @@ int main(int argc, char *argv[]){
     //solve for ground state
     //
     auto [en0,psi0] = dmrg(H,initState,sweeps1,{"Quiet=",true});
-    auto var = inner(H,psi0,H,psi0) - en0*en0;
+    auto var = sqrt( abs( inner(H,psi0,H,psi0) - en0*en0 ) );
     auto maxBondDim = maxLinkDim(psi0);
     printfln("\nh = %0.2f", 0.);
     println("first state");
-    printfln("Energy = %0.3f, var = %0.3g, maxLinkDim = %d", en0, var, maxBondDim);
+    printfln("Energy = %0.10f, var = %0.6f, maxLinkDim = %d", en0, var, maxBondDim);
 
     dataFile << 0.0 << " " << en0 << " " << var << " " << maxBondDim << " ";
 
@@ -84,11 +84,11 @@ int main(int argc, char *argv[]){
     auto wfs = std::vector<MPS>(1);
     wfs.at(0) = psi0;
     auto [en1,psi1] = dmrg(H,wfs,initState,sweeps2,{"Quiet=",true,"Weight=",20.0});
-    var = inner(H,psi1,H,psi1) - en1*en1;
+    var = sqrt( abs( inner(H,psi1,H,psi1) - en1*en1 ) );
     maxBondDim = maxLinkDim(psi1);
 
     println("\nsecond state");
-    printfln("Gap = %0.10f, var = %0.3g, maxLinkDim = %d", en1-en0, var, maxBondDim);
+    printfln("Gap = %0.10f, var = %0.6f, maxLinkDim = %d", en1-en0, var, maxBondDim);
 
     dataFile << en1-en0 << " " << var << " " << maxBondDim << " " << std::endl;
 
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]){
     // h > 0
     //
     double h = 0.;
-    double dh = 0.1;
+    double dh = 0.5;
     int Nh = int(9./dh);
     for( int i = 1; i <= Nh; i++){
         h += dh;
@@ -107,13 +107,6 @@ int main(int argc, char *argv[]){
             ampo += 0.5, "S-", j.s1, "S+", j.s2;
             ampo += 1.0, "Sz", j.s1, "Sz", j.s2;
         }
-        /////// Strip Geometry //////
-        /*int col = 1;
-        for(auto j : range1(N)){
-            ampo += h * pow(-1., col), "Sz", j;
-            if(j%Ly == 0)
-                col++;
-        }*/
         /////// Checkerboard Geometry //////
         int col = 1;
         for(auto j : range1(N)){
@@ -138,11 +131,11 @@ int main(int argc, char *argv[]){
         //solve for ground state
         //
         en0 = dmrg(psi0,H,sweeps2,{"Silent=",true});
-        var = inner(H,psi0,H,psi0) - en0*en0;
+        var = sqrt( abs( inner(H,psi0,H,psi0) - en0*en0) );
         maxBondDim = maxLinkDim(psi0);
         printfln("\nh = %0.2f", h);
         println("\nfirst state");
-        printfln("Energy = %0.3f, var = %0.3g, maxLinkDim = %d", en0, var, maxBondDim);
+        printfln("Energy = %0.10f, var = %0.10f, maxLinkDim = %d", en0, var, maxBondDim);
 
         dataFile << h << " " << en0 << " " << var << " " << maxBondDim << " ";
 
@@ -156,7 +149,7 @@ int main(int argc, char *argv[]){
         maxBondDim = maxLinkDim(psi1);
 
         println("\nsecond state");
-        printfln("Gap = %0.10f, var = %0.3g, maxLinkDim = %d", en1-en0, var, maxBondDim);
+        printfln("Gap = %0.10f, var = %0.10f, maxLinkDim = %d", en1-en0, var, maxBondDim);
 
         dataFile << en1-en0 << " " << var << " " << maxBondDim << " " << std::endl;
     

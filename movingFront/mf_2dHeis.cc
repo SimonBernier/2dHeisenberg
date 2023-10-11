@@ -17,6 +17,8 @@ std::vector<double> calculateLocalEnergy(int, int, SiteSet, MPS,
                                         std::vector<std::vector<ITensor>>,
                                         std::vector<std::vector<ITensor>>,
                                         std::vector<std::vector<ITensor>>);
+// calculate energy for periodic boundary at x = i
+double calculatePBCenergy(int, int, MPS, SiteSet, ITensor, ITensor, ITensor);
 // calculate energy of horizontal bonds for one column
 std::vector<double> calculateLRenergy(int, int, MPS, SiteSet, 
                                         std::vector<std::vector<ITensor>>,
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]){
 
     // write results to file
     char schar[128];
-    int n1 = std::sprintf(schar,"Ly_%d_Lx_%d_h_%0.2f_v_%0.2f_tau_%0.1f_maxDim_%d_2dHeis_mf.dat",Ly,Lx,h,v,tau,maxDim);
+    int n1 = std::sprintf(schar,"Ly_%d_Lx_%d_h_%0.2f_v_%0.2f_tau_%0.1f_maxDim_%d_gse_%d_2dHeis_mf.dat",Ly,Lx,h,v,tau,maxDim,GSETDVP);
 
     std::string s1(schar);
     std::ofstream datafile;
@@ -60,13 +62,13 @@ int main(int argc, char *argv[]){
     }
     //make header
     datafile << "time" << " " << "en(t)" << " " << "enf(t)" << " " << "enf(t)-en0" << " " << "svN(t)" << " "
-             << "localEn(t)" << " " << "localEn(t)-localEn0" << " " << "SzSz(t)" << " " << "Sperp(t)" << std::endl;
+             << "localEn(t)" << " " << "localEn(t)-localEn0" << " " << "SzSz(t)" << " " << "corrPerp(t)" << std::endl;
 
     auto N = Ly * Lx;
     auto sites = SpinHalf(N);
 
     auto ampo = AutoMPO(sites);
-    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", false});
+    auto lattice = squareLattice(Lx, Ly, {"YPeriodic = ", true});
 
     // autompo hamiltonian
     for(auto j : lattice){
@@ -78,22 +80,21 @@ int main(int argc, char *argv[]){
     // H at t=0 (gapped ground state)
     std::vector<double> hvals = hvector(Lx, Ly, 0.0, h, v, tau, tanhshift);
     /////// Checkerboard Geometry //////
-    for (int i = 1; i <= Lx; i++){
-        for (int j = 1; j <= Ly; j++){
-
-            int index = Ly*(i-1) + j;
-            if(Ly%2!=0){
-                if(index%2==0)
-                    ampo += +hvals[index], "Sz", index;
-                else
-                    ampo += -hvals[index], "Sz", index;
-            }
-            else{
-                if(index%2==0)
-                    ampo += +hvals[index] * pow(-1., i), "Sz", index;
-                else
-                    ampo += -hvals[index] * pow(-1., i), "Sz", index;
-            }
+    int col = 1;
+    for(auto j : range1(N)){
+        if(Ly%2!=0){
+            if(j%2==0)
+                ampo += +hvals[j-1], "Sz", j;
+            else
+                ampo += -hvals[j-1], "Sz", j;
+        }
+        else{
+            if(j%2==0)
+                ampo += +hvals[j-1] * pow(-1., col), "Sz", j;
+            else
+                ampo += -hvals[j-1] * pow(-1., col), "Sz", j;
+            if(j%Ly == 0)
+                col++;
         }
     }
     auto H = toMPO(ampo);
@@ -143,41 +144,47 @@ int main(int argc, char *argv[]){
         }
     }
 
+    //DMRG to find critical ground state
+    auto [en0,psi] = dmrg(Hfinal,initState,sweeps,{"Silent=",true});
+    auto dim0 = maxLinkDim(psi); //defines max dimension of critical state
+    std::vector<double> localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+
     //DMRG to find ground state at t=0
-    auto [en0,psi0] = dmrg(Hfinal,initState,sweeps,{"Silent=",true});
-    auto [en,psi] = dmrg(H,initState,sweeps,{"Silent=",true});
+    auto en = dmrg(psi,H,sweeps,{"Silent=",true}); // doing this saves on memory
     auto enf = inner(psi, Hfinal, psi);
 
     // calculate von Neumann S
-    auto svN = vonNeumannS(psi, N/2);
-    // calculate local energy density
-    std::vector<double> localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi0, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
-    std::vector<double> localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
-
-    /* // calculate spin correlation
-    std::vector<double> szsz(N,0.0), sperpsperp(N,0.0);
-    for(int b = 1; b<=N; b++){
-        auto [zz, perp] = spinspin(N/2+1, b, psi, sites);
-        szsz[b-1] = zz;
-        sperpsperp[b-1] = perp; 
+    std::vector<double> svN(Lx-1,0.0);
+    for(auto j : range1(Lx-1)){
+        svN[j-1] = vonNeumannS(psi, j*Ly);
     }
-    */
+    // calculate local energy density
+    std::vector<double> localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+    // calculate spin auto-correlators
+    std::vector<double> szsz(Lx,0.0), corrPerp(Lx,0.0);
+    for(int b = 1; b<=Lx; b++){
+        auto [zz, perp] = spinspin( (Lx-1)/2*Ly+1, (b-1)*Ly + 1, psi, sites);
+        szsz[b-1] = zz;
+        corrPerp[b-1] = perp;
+    }
 
     // store data to file
-    datafile << 0.0 << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
+    datafile << 0.0 << " " << en << " " << enf << " " << enf-en0 << " ";
+    for (int j=0; j < Lx-1; j++){
+        datafile << svN[j] << " ";
+    }
     for (int j=0; j < Lx-1; j++){
         datafile << localEn[j] << " ";
     }
     for (int j=0; j < Lx-1; j++){
         datafile << localEn[j]-localEn0[j] << " ";
     }
-    /*for (int j = 0; j < N; j++){
+    for (int j = 0; j < Lx; j++){
         datafile << szsz[j] << " ";
     }
-    for (int j = 0; j < N; j++){
-        datafile << sperpsperp[j] << " ";
+    for (int j = 0; j < Lx; j++){
+        datafile << corrPerp[j] << " ";
     }
-    */
     datafile << std::endl;
 
     // time evolution parameters
@@ -191,14 +198,14 @@ int main(int argc, char *argv[]){
     auto sweeps1 = Sweeps(2); //two forward time steps of delta1
     sweeps1.maxdim() = maxDim;
     sweeps1.cutoff() = truncE;
-    sweeps1.niter() = 15;
+    sweeps1.niter() = 10;
     auto sweeps2 = Sweeps(1); //one backward time step of delta2
     sweeps2.maxdim() = maxDim;
     sweeps2.cutoff() = truncE;
-    sweeps2.niter() = 15;
+    sweeps2.niter() = 10;
 
-    printfln("\ncritical GS: energy = %0.3f, maxDim = %d\n", en0, maxLinkDim(psi0));
-    printfln("t = %0.2f, energy = %0.3f, SvN = %0.3f, maxDim = %d\n", tval, en, svN, maxLinkDim(psi));
+    printfln("\ncritical GS: energy = %0.3f, maxDim = %d\n", en0, dim0);
+    printfln("t = %0.2f, energy = %0.3f, SvN = %0.3f, maxDim = %d\n", tval, en, svN[(Lx+1)/2], maxLinkDim(psi));
 
     ////////////////////////////////////////////////////////////////////////////
     ///////// time evolve //////////////////////////////////////////////////////
@@ -220,22 +227,21 @@ int main(int argc, char *argv[]){
             ampo += 1.0, "Sz", j.s1, "Sz", j.s2;
         }
         /////// Checkerboard Geometry //////
-        for (int i = 1; i <= Lx; i++){
-            for (int j = 1; j <= Ly; j++){
-
-                int index = Ly*(i-1) + j;
-                if(Ly%2!=0){
-                    if(index%2==0)
-                        ampo += +hvals[index], "Sz", index;
-                    else
-                        ampo += -hvals[index], "Sz", index;
-                }
-                else{
-                    if(index%2==0)
-                        ampo += +hvals[index] * pow(-1., i), "Sz", index;
-                    else
-                        ampo += -hvals[index] * pow(-1., i), "Sz", index;
-                }
+        int col = 1;
+        for(auto j : range1(N)){
+            if(Ly%2!=0){
+                if(j%2==0)
+                    ampo += +hvals[j-1], "Sz", j;
+                else
+                    ampo += -hvals[j-1], "Sz", j;
+            }
+            else{
+                if(j%2==0)
+                    ampo += +hvals[j-1] * pow(-1., col), "Sz", j;
+                else
+                    ampo += -hvals[j-1] * pow(-1., col), "Sz", j;
+                if(j%Ly == 0)
+                    col++;
             }
         }
         H = toMPO(ampo);
@@ -244,8 +250,10 @@ int main(int argc, char *argv[]){
         
         if(GSETDVP){
             // time evolve with GSE-TDVP
-            std::vector<int> dimK = {maxLinkDim(psi), maxLinkDim(psi)};
-            addBasis(psi, H, dimK, {"Cutoff",truncE,
+            //std::vector<int> dimK = {maxLinkDim(psi), maxLinkDim(psi)};
+            std::vector<Real> truncK = {0.1*truncE, 0.1*truncE};
+            //addBasis(psi, H, dimK, {"Cutoff",truncE,
+            addBasis(psi, H, truncK, {"Cutoff",truncE,
                                             "Method", "DensityMatrix",
                                             "KrylovOrd",3,
                                             "Quiet",true});
@@ -255,17 +263,21 @@ int main(int argc, char *argv[]){
                 printfln("\n --- Starting 2-TDVP at t = %0.1f --- ", tval+dt);
             }
             // one-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1});
-            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
+            if(maxLinkDim(psi)>dim0){
+                GSETDVP = false;
+                printfln("\n --- Starting 2-TDVP at t = %0.2f --- ", tval+dt);
+            }
         }
         else{
             if(n==1)
 				printfln("\n --- Starting 2-TDVP --- ");
             // two-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2});
-            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
+            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
         }
 
         auto tdvpTime = (double)(std::clock() - tStartTDVP)/CLOCKS_PER_SEC;
@@ -273,35 +285,38 @@ int main(int argc, char *argv[]){
         //calculate energy wrt final Hamiltonian
         enf = innerC(psi, Hfinal, psi).real();
         //calculate entanglement entropy
-        svN = vonNeumannS(psi, N/2);
-        // calculate local energy density <psi(t)|H(x,t)|psi(t)>
-        localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
-        /*
-        for(int b = 1; b<=N; b++){
-            auto [zz, perp] = spinspin(N/2+1, b, psi, sites);
-            szsz[b-1] = zz;
-            sperpsperp[b-1] = perp; 
+        for(auto j : range1(Lx-1)){
+            svN[j-1] = vonNeumannS(psi, j*Ly);
         }
-        */
+        // calculate local energy density <psi(t)|H(x,y)|psi(t)>
+        localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+        // calculate spin auto-correlators
+        for(int b = 1; b<=Lx; b++){
+            auto [zz, perp] = spinspin( (Lx-1)/2*Ly+1, (b-1)*Ly + 1, psi, sites);
+            szsz[b-1] = zz;
+            corrPerp[b-1] = perp;
+        }
 
-        datafile << tval << " " << en << " " << enf << " " << enf-en0 << " " << svN << " ";
-        for (int j = 0; j < Lx-1; j++){
+       // store data to file
+        datafile << tval << " " << en << " " << enf << " " << enf-en0 << " ";
+        for (int j=0; j < Lx-1; j++){
+            datafile << svN[j] << " ";
+        }
+        for (int j=0; j < Lx-1; j++){
             datafile << localEn[j] << " ";
         }
-        for (int j = 0; j < Lx-1; j++){
+        for (int j=0; j < Lx-1; j++){
             datafile << localEn[j]-localEn0[j] << " ";
         }
-        /*
-        for (int j = 0; j < N; j++){
+        for (int j = 0; j < Lx; j++){
             datafile << szsz[j] << " ";
         }
-        for (int j = 0; j < N; j++){
-            datafile << sperpsperp[j] << " ";
+        for (int j = 0; j < Lx; j++){
+            datafile << corrPerp[j] << " ";
         }
-        */
         datafile << std::endl;
 
-        printfln("\nt = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs\n", tval, enf-en0, svN, maxLinkDim(psi), tdvpTime);
+        printfln("\nt = %0.2f, enf-en0 = %0.3g, SvN = %0.3f, maxDim = %d, wall time = %0.3fs", tval, enf-en0, svN[(Lx+1)/2], maxLinkDim(psi), tdvpTime);
 
         if( abs(en - enf) < 1E-5){
             stopCondition = true;
@@ -351,7 +366,7 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
                                 std::vector<std::vector<ITensor>> MP_LR,
                                 std::vector<std::vector<ITensor>> ZZ_LR){
 
-    std::vector<double> tempEn(Lx, 0.0);
+    std::vector<double> tempEn(Lx,0.0);
 
     std::vector<double> localEnergy(Lx-1, 0.0); // interpolated energy density
 
@@ -369,8 +384,14 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
         }// for j
     }// for i
-    
-    /*
+
+    // y-periodic interactions
+    for(int i=1; i<=Lx; i++){
+
+        tempEn[i-1] += calculatePBCenergy(i, Ly, psi, sites, PM[i-1][Ly-2], MP[i-1][Ly-2], ZZ[i-1][Ly-2]);
+
+    }// for i
+
     // MPS long-range interactions
     for(int i=1; i<Lx; i++){
 
@@ -383,28 +404,52 @@ std::vector<double> calculateLocalEnergy(int Lx, int Ly, SiteSet sites, MPS psi,
 
         }// for m
     }// for i
-    */
 
     // interpolate tempEn into localEnergy
-    for(int i=1; i<=Lx; i++){
+    for(int i=1; i<Lx; i++){
 
-        // interpolation and addition of the nearest-neighbour interactions
-        // add left/right boundary terms
-        if( i==1 ){
+        // interpolation and average of the nearest-neighbour interactions
+        if( i==1 ){ // left boundary
             localEnergy[i-1] += tempEn[i-1] + 0.5*tempEn[i];
         }
-        else if( i==Lx-1 ){
-            localEnergy[i-1] += 0.5*tempEn[i-1] + tempEn[i];
+        else if( i==Lx-1 ){ // right boundary
+            localEnergy[i-1] += 0.5 * tempEn[i-1] + tempEn[i];
         }
         else{
-            localEnergy[i-1] += 0.5*tempEn[i-1] + 0.5*tempEn[i];
-        }        
-
+            localEnergy[i-1] += 0.5 * (tempEn[i-1] + tempEn[i]);
+        }
     } // for i
 
     return localEnergy;
 
 }//localEnergy
+
+// calculates PBC energy for 2D MPS using gates
+double calculatePBCenergy(int i, int Ly, MPS psi, SiteSet sites, ITensor PM, ITensor MP, ITensor ZZ){
+
+    double energy;
+    int index = (i-1)*Ly + 1;
+
+    psi.position(index);
+
+    for(int n=0; n<Ly-2; n++){
+
+        int b = index+n;//define gate bond
+        auto g = BondGate(sites,b,b+1);
+        auto AA = psi(b)*psi(b+1)*g.gate(); //contract over bond b
+        AA.replaceTags("Site,1","Site,0"); //replace site tags for correct svd
+        psi.svdBond(g.i1(), AA, Fromleft); //svd to restore MPS
+        psi.position(g.i2()); //orthogonality center moves to the right
+
+    } // for n
+
+    auto ket = psi(index+Ly-2)*psi(index+Ly-1);
+    energy =  eltC( dag(prime(ket,"Site")) * PM * ket).real();
+    energy += eltC( dag(prime(ket,"Site")) * MP * ket).real();
+    energy += eltC( dag(prime(ket,"Site")) * ZZ * ket).real();
+
+    return energy;
+} // calculatePBCenergy
 
 std::vector<double> calculateLRenergy(int i, int Ly, MPS psi, SiteSet sites,
                                     std::vector<std::vector<ITensor>> PM_LR,

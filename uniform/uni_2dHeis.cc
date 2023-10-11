@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
     }
     //make header
     datafile << "time" << " " << "en(t)" << " " << "enf(t)" << " " << "enf(t)-en0" << " " << "svN(t)" << " "
-             << "localEn(t)" << " " << "localEn(t)-localEn0" << " " << "SzSz(t)" << " " << "Sperp(t)" << std::endl;
+             << "localEn(t)" << " " << "localEn(t)-localEn0" << " " << "SzSz(t)" << " " << "corrPerp(t)" << std::endl;
 
     auto N = Ly * Lx;
     auto sites = SpinHalf(N);
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
 
     // calculate initial local energy density
     std::vector<double> localEn0(Lx-1,0.0), localEn(Lx-1,0.0); // local energy density vector
-    std::vector<double> szsz(Lx,0.0), sperpsperp(Lx,0.0);
+    std::vector<double> szsz(Lx,0.0), corrPerp(Lx,0.0);
 
     //make 2D vector of ITensor for local energy operators
     //long-range interactions have the same structure as nearest-neighbour when we use swap gates
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]){
     for(int b = 1; b<=Lx; b++){
         auto [zz, perp] = spinspin( (Lx-1)/2*Ly+1, (b-1)*Ly + 1, psi, sites);
         szsz[b-1] = zz;
-        sperpsperp[b-1] = perp;
+        corrPerp[b-1] = perp;
     }
 
     // store data to file
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]){
         datafile << szsz[j] << " ";
     }
     for (int j = 0; j < Lx; j++){
-        datafile << sperpsperp[j] << " ";
+        datafile << corrPerp[j] << " ";
     }
     datafile << std::endl;
 
@@ -295,11 +295,11 @@ int main(int argc, char *argv[]){
         for(int b = 1; b<=Lx; b++){
             auto [zz, perp] = spinspin( (Lx-1)/2*Ly+1, (b-1)*Ly + 1, psi, sites);
             szsz[b-1] = zz;
-            sperpsperp[b-1] = perp;
+            corrPerp[b-1] = perp;
         }
 
         // store data to file
-        datafile << __GCC_ATOMIC_TEST_AND_SET_TRUEVAL << " " << en << " " << enf << " " << enf-en0 << " ";
+        datafile << tval << " " << en << " " << enf << " " << enf-en0 << " ";
         for (int j=0; j < Lx-1; j++){
             datafile << svN[j] << " ";
         }
@@ -313,7 +313,7 @@ int main(int argc, char *argv[]){
             datafile << szsz[j] << " ";
         }
         for (int j = 0; j < Lx; j++){
-            datafile << sperpsperp[j] << " ";
+            datafile << corrPerp[j] << " ";
         }
         datafile << std::endl;
 

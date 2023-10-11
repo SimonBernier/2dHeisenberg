@@ -1,11 +1,10 @@
 input  
     {
         Ly = 4
-        Lx = 32
+        Lx = 25
         h = 5
-        hc = 2.7249
-        maxDim = 128
+        maxDim = 512
         truncE = 1E-8
         v = 3
-	    tau = 0.2
+	    tau = 0.4
     }

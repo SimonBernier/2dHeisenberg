@@ -145,20 +145,21 @@ int main(int argc, char *argv[]){
         }
     }
 
+    //DMRG to find critical ground state
+    auto [en0,psi] = dmrg(Hfinal,initState,sweeps,{"Silent=",true});
+    auto dim0 = maxLinkDim(psi); //defines max dimension of critical state
+    localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
+
     //DMRG to find ground state at t=0
-    auto [en,psi] = dmrg(H,initState,sweeps,{"Silent=",true});
-    auto [en0,psi0] = dmrg(Hfinal,psi,sweeps,{"Silent=",true});
+    auto en = dmrg(psi,H,sweeps,{"Silent=",true}); // doing this saves on memory
     auto enf = inner(psi, Hfinal, psi);
-    auto dim0 = maxLinkDim(psi0); //defines max dimension of critical state
 
     // calculate von Neumann S
     std::vector<double> svN(Lx-1,0.0);
     for(auto j : range1(Lx-1)){
         svN[j-1] = vonNeumannS(psi, j*Ly);
     }
-    
     // calculate local energy density
-    localEn0 = calculateLocalEnergy(Lx, Ly, sites, psi0, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
     localEn = calculateLocalEnergy(Lx, Ly, sites, psi, PM, MP, ZZ, PM_LR, MP_LR, ZZ_LR);
     // calculate spin auto-correlators
     for(int b = 1; b<=Lx; b++){
@@ -203,7 +204,7 @@ int main(int argc, char *argv[]){
     sweeps2.cutoff() = truncE;
     sweeps2.niter() = 10;
 
-    printfln("\ncritical GS: energy = %0.3f, maxDim = %d\n", en0, maxLinkDim(psi0));
+    printfln("\ncritical GS: energy = %0.3f, maxDim = %d\n", en0, dim0);
     printfln("t = %0.2f, energy = %0.3f, SvN = %0.3f, maxDim = %d\n", tval, en, svN[(Lx+1)/2], maxLinkDim(psi));
 
     ////////////////////////////////////////////////////////////////////////////

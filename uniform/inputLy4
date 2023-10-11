@@ -1,7 +1,7 @@
 input  
     {
         Ly = 4
-        Lx = 9
+        Lx = 25
         h = 5
         maxDim = 512
         truncE = 1E-8

@@ -27,8 +27,6 @@ set(gca,'FontName','Times','FontSize',15)
 imagesc('XData',x,'YData',tval,'CData', localEn_En0)
 colormap('jet'), axis('tight'), clim([minHeatMap maxHeatMap]), colorbar
 
-enCenter = mean(localEn_En0(:,center),2);
-
 s2 = subplot(1,3,2,'Position',[0.38 0.2 0.28 0.7]);
 xlabel('x-x0')
 ylim([tval(1) tval(end)]), xlim([x(1) x(end)])
@@ -45,6 +43,30 @@ x = (1:Lx) - (Lx+1)/2;
 imagesc('XData',x,'YData',tval,'CData', corrPerp)
 colormap('jet'), axis('tight'), colorbar
 clim( [min(corrPerp,[],'all'), max(corrPerp(:,[1:(Lx-1)/2 (Lx+1)/2+1:end]),[],'all') ] )
+
+enCenter = mean(localEn_En0(:,center),2);
+
+enAssym = localEn_En0(:,(Lx-1)/2:-1:1) - localEn_En0(:, (Lx-1)/2+1:Lx-1);
+enAssymTot = sum(abs(enAssym),2);
+
+svnAssym = svn(:,(Lx-1)/2:-1:1) - svn(:, (Lx-1)/2+1:Lx-1);
+svnAssymTot = sum(abs(svnAssym),2);
+
+corrZAssym = corrZ(:,(Lx-1)/2:-1:1) - corrZ(:, (Lx+1)/2+1:Lx);
+corrZAssymTot = sum(abs(corrZAssym),2);
+
+corrPAssym = corrPerp(:,(Lx-1)/2:-1:1) - corrPerp(:, (Lx+1)/2+1:Lx);
+corrPAssymTot = sum(abs(corrPAssym),2);
+
+figure(2), clf, box on
+hold on
+plot(tval, enAssymTot, 'DisplayName','en')
+plot(tval, svnAssymTot, 'DisplayName','svn')
+plot(tval, corrZAssymTot, 'DisplayName','corrZ')
+plot(tval, corrPAssymTot, 'DisplayName','corrP')
+hold off
+ylabel('\Delta L/R'), xlabel('Time'), legend('Location','best')
+set(gca,'FontName','Times','FontSize',15)
 
 %% function to get data
 function [tval, en, enf, enf_en0, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Lx)

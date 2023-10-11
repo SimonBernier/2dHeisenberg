@@ -299,7 +299,7 @@ int main(int argc, char *argv[]){
         }
 
         // store data to file
-        datafile << 0.0 << " " << en << " " << enf << " " << enf-en0 << " ";
+        datafile << __GCC_ATOMIC_TEST_AND_SET_TRUEVAL << " " << en << " " << enf << " " << enf-en0 << " ";
         for (int j=0; j < Lx-1; j++){
             datafile << svN[j] << " ";
         }

@@ -1,6 +1,6 @@
 clearvars
 
-Ly = 4; Lx = 1; h=5.0; tau = 0.2; maxDim = 512;
+Ly = 4; Lx = 21; h=5.0; tau = 0.2; maxDim = 512;
 dt = 0.1; tanhshift = 4; gse = 1;
 
 R = Ly/2; center = (Lx+1)/2 + (-R:R);
@@ -28,6 +28,8 @@ imagesc('XData',x,'YData',tval,'CData', localEn_En0)
 colormap('jet'), axis('tight'), clim([minHeatMap maxHeatMap]), colorbar
 
 enCenter = mean(localEn_En0(:,center),2);
+enAssym = localEn_En0(:,(Lx-1)/2:-1:1) - localEn_En0(:, (Lx-1)/2+1:Lx-1);
+enAssymTot = sum(abs(enAssym),2);
 
 s2 = subplot(1,3,2,'Position',[0.38 0.2 0.28 0.7]);
 xlabel('x-x0')
@@ -37,6 +39,9 @@ set(gca,'FontName','Times','FontSize',15)
 imagesc('XData',x,'YData',tval,'CData', svn)
 colormap('jet'), axis('tight'), colorbar
 
+svnAssym = svn(:,(Lx-1)/2:-1:1) - svn(:, (Lx-1)/2+1:Lx-1);
+svnAssymTot = sum(abs(svnAssym),2);
+
 s3 = subplot(1,3,3,'Position',[0.71 0.2 0.28 0.7]);
 ylim([tval(1) tval(end)]), xlim([x(1) x(end)])
 set(gca,'FontName','Times','FontSize',15)
@@ -45,6 +50,15 @@ x = (1:Lx) - (Lx+1)/2;
 imagesc('XData',x,'YData',tval,'CData', corrPerp)
 colormap('jet'), axis('tight'), colorbar
 clim( [min(corrPerp,[],'all'), max(corrPerp(:,[1:(Lx-1)/2 (Lx+1)/2+1:end]),[],'all') ] )
+
+corrzAssym = corrZ(:,(Lx-1)/2:-1:1) - corrZ(:, (Lx-1)/2+1:Lx-1);
+corrzAssymTot = sum(abs(corrzAssym),2);
+corrPAssym = corrPerp(:,(Lx-1)/2:-1:1) - corrPerp(:, (Lx-1)/2+1:Lx-1);
+corrPAssymTot = sum(abs(corrPAssym),2);
+
+figure(2), box on
+hold on
+plot(tval, eAssymTot)
 
 %% function to get data
 function [tval, en, enf, enf_en0, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Lx)

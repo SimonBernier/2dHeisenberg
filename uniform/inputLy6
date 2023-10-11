@@ -1,0 +1,10 @@
+input  
+    {
+        Ly = 6
+        Lx = 5
+        h = 5
+        maxDim = 512
+        truncE = 1E-8
+	    tau = 0.2
+        tanhshift = 4.0
+    }

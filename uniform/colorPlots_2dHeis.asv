@@ -1,6 +1,6 @@
 clearvars
 
-Ly = 4; Lx = 21; h=5.0; tau = 0.2; maxDim = 512;
+Ly = 4; Lx = 1; h=5.0; tau = 0.2; maxDim = 512;
 dt = 0.1; tanhshift = 4; gse = 1;
 
 R = Ly/2; center = (Lx+1)/2 + (-R:R);

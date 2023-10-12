@@ -1,9 +1,9 @@
 clearvars
 
-Ly = 4; Lx = 25; h=5.0; v = 3.0; tau = 0.4; maxDim = 512;
+Ly = 4; Lx = 9; h=5.0; v = 3.0; tau = 0.4; maxDim = 512;
 dt = 0.1; tanhshift = 4; gse = 1;
 
-R = Ly; center = (Lx+1)/2 + (-R:R);
+R = Ly/2; center = (Lx+1)/2 + (-R:R);
 
 % cd data_1E-8\
 filename = sprintf("Ly_%d_Lx_%d_h_%0.2f_v_%0.2f_tau_%0.1f_maxDim_%d_gse_%d_2dHeis_mf.dat",Ly,Lx,h,v,tau,maxDim,gse);
@@ -67,6 +67,16 @@ plot(tval, corrPAsymTot, 'DisplayName','corrP')
 hold off
 ylabel('\Delta L/R'), xlabel('Time'), legend('Location','best')
 set(gca,'FontName','Times','FontSize',15)
+
+figure(3), clf, box on
+hold on
+plot(tval, enf_en0/(Ly*(Lx-1)),'DisplayName','total')
+plot(tval, enCenter/Ly,'DisplayName','center')
+hold off
+xlabel('time'), ylabel('energy density')
+legend('Location','best')
+set(gca,'FontName','Times','FontSize',15)
+
 
 %% function to get data
 function [tval, en, enf, enf_en0, svn, localEn0, localEn, corrZ, corrPerp] = collectData(A,Lx)

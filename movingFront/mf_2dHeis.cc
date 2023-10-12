@@ -343,7 +343,7 @@ std::vector<double> hvector(int Lx, int Ly, double tval, double h, double v, dou
         if( Lx%2 == 0 )
             f = abs(double(i-Lx/2)-0.5)/v - tval;
         else
-            f = abs(double(i-(Lx+1)/2)-0.5)/v - tval;
+            f = abs(double(i-(Lx+1)/2))/v - tval;
 
         for (int j = 1; j <= Ly; j++){
 

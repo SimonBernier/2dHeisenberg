@@ -1,14 +1,14 @@
 clearvars
 
-Ly = 4; Lx = 9; h=5.0; v = 3.0; tau = 0.4; maxDim = 512;
-dt = 0.1; tanhshift = 4; gse = 1;
+Ly = 4; Lx = 25; h=6.0; v = 5; tau = 2; maxDim = 800;
+dt = 0.1; tanhshift = 3; gse = 1;
 
 R = Ly/2; center = (Lx+1)/2 + (-R:R);
 
-% cd data_1E-8\
+cd data_1E-8\
 filename = sprintf("Ly_%d_Lx_%d_h_%0.2f_v_%0.2f_tau_%0.1f_maxDim_%d_gse_%d_2dHeis_mf.dat",Ly,Lx,h,v,tau,maxDim,gse);
 data = importdata(filename,' ',1);
-% cd ..\
+cd ..\
 
 [tval, en, enf, enf_en0, svn, localEn, localEn_En0, corrZ, corrPerp] = collectData(data, Lx);
 Nt = length(tval); x = (1:Lx-1) - Lx/2;

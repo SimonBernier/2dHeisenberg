@@ -257,16 +257,16 @@ int main(int argc, char *argv[]){
                                             "Method", "DensityMatrix",
                                             "KrylovOrd",3,
                                             "Quiet",true});
-            // check if bond dimension has grown enough
+            // check if bond dimension has grown past the maximum dimension
             if(maxLinkDim(psi)>=maxDim){
                 GSETDVP = false;
                 printfln("\n --- Starting 2-TDVP at t = %0.1f --- ", tval+dt);
             }
             // one-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
-            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1,"ErrGoal",truncE});
-            if(maxLinkDim(psi)>dim0){
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",1});
+            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",1});
+            if(maxLinkDim(psi)>dim0){ // check if bond dimension of psi is the same as the critical state
                 GSETDVP = false;
                 printfln("\n --- Starting 2-TDVP at t = %0.2f --- ", tval+dt);
             }
@@ -275,9 +275,9 @@ int main(int argc, char *argv[]){
             if(n==1)
 				printfln("\n --- Starting 2-TDVP --- ");
             // two-site TDVP
-            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
-            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
-            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2,"ErrGoal",truncE});
+            tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
+            tdvp(psi, H, -Cplx_i*delta2, sweeps2, {"Silent",true,"Truncate",true,"NumCenter",2});
+            en = tdvp(psi, H, -Cplx_i*delta1, sweeps1, {"Silent",true,"Truncate",true,"NumCenter",2});
         }
 
         auto tdvpTime = (double)(std::clock() - tStartTDVP)/CLOCKS_PER_SEC;
